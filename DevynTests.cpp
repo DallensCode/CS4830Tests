@@ -119,8 +119,13 @@ TEST(EMU4380_UNITTESTS, FETCH_ADD_INVALID) {
         ADD, 2, 12, 12, 0x00, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 6;
+
+    // setup memory
     mem_size = 8;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, add_instr, sizeof(add_instr));
@@ -135,16 +140,22 @@ TEST(EMU4380_UNITTESTS, FETCH_ADD_INVALID) {
 
 TEST(EMU4380_UNITTESTS, DECODE_MOV_VALID) {
     
-    reg_file[R5] = 0;
-    reg_file[R6] = 60;
+
 
     // test instruction
     unsigned char mov_instr[8] = {
         MOV, 5, 6, 0, 0x00, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+    reg_file[R5] = 0;
+    reg_file[R6] = 60;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, mov_instr, sizeof(mov_instr));
@@ -153,9 +164,13 @@ TEST(EMU4380_UNITTESTS, DECODE_MOV_VALID) {
     cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
-    cntrl_regs[OPERAND_3] = 0;//DC
-    cntrl_regs[IMMEDIATE] = 0;//DC
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
 
+    delete[] prog_mem;
     // decode
     EXPECT_TRUE(decode());
     EXPECT_EQ(data_regs[REG_VAL_1], 60);
@@ -168,8 +183,13 @@ TEST(EMU4380_UNITTESTS, DECODE_MOV_INVALID) {
         MOV, 0x1B, 0x1A, 0, 0x00, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, mov_instr, sizeof(mov_instr));
@@ -178,8 +198,12 @@ TEST(EMU4380_UNITTESTS, DECODE_MOV_INVALID) {
     cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
-    cntrl_regs[OPERAND_3] = 0;//DC
-    cntrl_regs[IMMEDIATE] = 0;//DC
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode
     EXPECT_FALSE(decode());
@@ -192,8 +216,13 @@ TEST(EMU4380_UNITTESTS, DECODE_JMP_VALID) {
         JMP, 0, 0, 0, 0xFF, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, jmp_instr, sizeof(jmp_instr));
@@ -203,11 +232,11 @@ TEST(EMU4380_UNITTESTS, DECODE_JMP_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     // decode
     EXPECT_TRUE(decode());       
 }
@@ -219,8 +248,13 @@ TEST(EMU4380_UNITTESTS, DECODE_JMP_INVALID) {
         JMP, 0, 0, 0, 0x00, 0xFF, 0x00, 0xFF
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, jmp_instr, sizeof(jmp_instr));
@@ -230,11 +264,11 @@ TEST(EMU4380_UNITTESTS, DECODE_JMP_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     // decode
     EXPECT_FALSE(decode());  
 }
@@ -245,8 +279,13 @@ TEST(EMU4380_UNITTESTS, DECODE_LDA_VALID) {
         LDA, 1, 0, 0, 0x04, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, lda_instr, sizeof(lda_instr));
@@ -256,11 +295,11 @@ TEST(EMU4380_UNITTESTS, DECODE_LDA_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     // decode
     EXPECT_TRUE(decode());
 }
@@ -271,8 +310,13 @@ TEST(EMU4380_UNITTESTS, DECODE_LDA_INVALID) {
         LDA, 1, 0, 0, 0x00, 0xFF, 0xFF, 0xFF
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 12;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, lda_instr, sizeof(lda_instr));
@@ -282,11 +326,11 @@ TEST(EMU4380_UNITTESTS, DECODE_LDA_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     // decode
     EXPECT_FALSE(decode());
 }
@@ -297,8 +341,13 @@ TEST(EMU4380_UNITTESTS, DECODE_STR_VALID) {
         STR, 1, 0, 0, 0x04, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, str_instr, sizeof(str_instr));
@@ -308,11 +357,11 @@ TEST(EMU4380_UNITTESTS, DECODE_STR_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     // decode
     EXPECT_TRUE(decode());
 }
@@ -323,8 +372,13 @@ TEST(EMU4380_UNITTESTS, DECODE_STR_INVALID) {
         STR, 1, 0, 0, 0x09, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 12;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, str_instr, sizeof(str_instr));
@@ -334,11 +388,11 @@ TEST(EMU4380_UNITTESTS, DECODE_STR_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
     // decode
@@ -351,8 +405,13 @@ TEST(EMU4380_UNITTESTS, DECODE_LDR_VALID) {
         LDR, 1, 0, 0, 0x09, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 1024;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, ldr_instr, sizeof(ldr_instr));
@@ -362,11 +421,11 @@ TEST(EMU4380_UNITTESTS, DECODE_LDR_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
     // decode
@@ -379,8 +438,13 @@ TEST(EMU4380_UNITTESTS, DECODE_LDR_INVALID) {
         LDR, 1, 0, 0, 0x09, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 12;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, ldr_instr, sizeof(ldr_instr));
@@ -390,11 +454,11 @@ TEST(EMU4380_UNITTESTS, DECODE_LDR_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
     // decode
@@ -407,8 +471,13 @@ TEST(EMU4380_UNITTESTS, DECODE_STB_VALID) {
         STB, 1, 0, 0, 0x09, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 9;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, stb_instr, sizeof(stb_instr));
@@ -418,11 +487,11 @@ TEST(EMU4380_UNITTESTS, DECODE_STB_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
     // decode
@@ -436,8 +505,13 @@ TEST(EMU4380_UNITTESTS, DECODE_STB_INVALID) {
         STB, 1, 0, 0, 0x08, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 7;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, stb_instr, sizeof(stb_instr));
@@ -447,11 +521,11 @@ TEST(EMU4380_UNITTESTS, DECODE_STB_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
     // decode
@@ -464,8 +538,13 @@ TEST(EMU4380_UNITTESTS, DECODE_LDB_VALID) {
         STB, 1, 0, 0, 0x09, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 9;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, ldb_instr, sizeof(ldb_instr));
@@ -475,10 +554,11 @@ TEST(EMU4380_UNITTESTS, DECODE_LDB_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
@@ -493,8 +573,13 @@ TEST(EMU4380_UNITTESTS, DECODE_LDB_INVALID) {
         STB, 1, 0, 0, 0x08, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 7;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, ldb_instr, sizeof(ldb_instr));
@@ -504,11 +589,11 @@ TEST(EMU4380_UNITTESTS, DECODE_LDB_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     //std::cout << "in str invalid " << cntrl_regs[IMMEDIATE] << std::endl;
 
     // decode
@@ -522,10 +607,15 @@ TEST(EMU4380_UNITTESTS, DECODE_ADD_VALID) {
         ADD, 1, 2, 3, 0x00, 0x00, 0x00, 0x00
     };
 
-    // setup memory
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
     reg_file[R2] = 40;
     reg_file[R3] = 60;
     reg_file[PC] = 0;
+
+    // setup memory
     mem_size = 128;
     prog_mem = new unsigned char[mem_size];
     std::memcpy(prog_mem, add_instr, sizeof(add_instr));
@@ -535,10 +625,11 @@ TEST(EMU4380_UNITTESTS, DECODE_ADD_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode/assert
     EXPECT_TRUE(decode());
@@ -571,10 +662,11 @@ TEST(EMU4380_UNITTESTS, DECODE_ADD_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_FALSE(decode());
@@ -608,10 +700,11 @@ TEST(EMU4380_UNITTESTS, DECODE_ADDI_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_TRUE(decode());
@@ -644,10 +737,11 @@ TEST(EMU4380_UNITTESTS, DECODE_ADDI_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_FALSE(decode());
@@ -680,10 +774,11 @@ TEST(EMU4380_UNITTESTS, DECODE_SUB_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_TRUE(decode());
@@ -716,10 +811,11 @@ TEST(EMU4380_UNITTESTS, DECODE_SUB_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_FALSE(decode());
@@ -752,10 +848,11 @@ TEST(EMU4380_UNITTESTS, DECODE_SUBI_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_TRUE(decode());
@@ -788,10 +885,11 @@ TEST(EMU4380_UNITTESTS, DECODE_SUBI_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_FALSE(decode());
@@ -824,10 +922,11 @@ TEST(EMU4380_UNITTESTS, DECODE_MUL_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_TRUE(decode());
@@ -860,10 +959,11 @@ TEST(EMU4380_UNITTESTS, DECODE_MUL_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_FALSE(decode());
@@ -896,10 +996,11 @@ TEST(EMU4380_UNITTESTS, DECODE_DIV_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_TRUE(decode());
@@ -932,10 +1033,11 @@ TEST(EMU4380_UNITTESTS, DECODE_DIV_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
 
     // decode and assert
     EXPECT_FALSE(decode());
@@ -968,11 +1070,12 @@ TEST(EMU4380_UNITTESTS, DECODE_SDIV_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
 
+    delete[] prog_mem;
     // decode and assert
     EXPECT_TRUE(decode());
     EXPECT_EQ(data_regs[REG_VAL_1], 30);
@@ -1004,11 +1107,12 @@ TEST(EMU4380_UNITTESTS, DECODE_SDIV_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
 
+    delete[] prog_mem;
     // decode and assert
     EXPECT_FALSE(decode());
     EXPECT_EQ(data_regs[REG_VAL_1], 0);
@@ -1040,11 +1144,11 @@ TEST(EMU4380_UNITTESTS, DECODE_DIVI_VALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
-
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
     // decode and assert
     EXPECT_TRUE(decode());
     EXPECT_EQ(data_regs[REG_VAL_1], 50);
@@ -1076,15 +1180,238 @@ TEST(EMU4380_UNITTESTS, DECODE_DIVI_INVALID) {
     cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
     cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
     cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
-    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[4]) |
-                    (static_cast<unsigned int>(prog_mem[5]) << 8) |
-                    (static_cast<unsigned int>(prog_mem[6]) << 16) |
-                    (static_cast<unsigned int>(prog_mem[7]) << 24);
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
 
+    delete[] prog_mem;
     // decode and assert
     EXPECT_FALSE(decode());
     EXPECT_EQ(data_regs[REG_VAL_1], 0);
     EXPECT_EQ(data_regs[REG_VAL_2], 0);
+}
+
+
+TEST(EMU4380_UNITTESTS, EXECUTE_JMP_VALID) {
+
+    // test instruction
+    unsigned char instr[8] = {
+        JMP, 1, 2, 3, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
+    reg_file[PC] = 0;
+
+    // setup memory
+    mem_size = 4294967295;
+    prog_mem = new unsigned char[mem_size];
+    std::memcpy(prog_mem, instr, sizeof(instr));
+
+    // fetch
+    cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
+    cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
+    cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
+
+    // execute and assert
+    EXPECT_TRUE(execute());
+    EXPECT_EQ(reg_file[PC], 4294967295);
+}
+
+TEST(EMU4380_UNITTESTS, EXECUTE_JMP_INVALID) {
+
+    // test instruction
+    unsigned char instr[8] = {
+        JMP, 1, 2, 3, 0x96, 0x00, 0x00, 0x00
+    };
+
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
+    reg_file[PC] = 0;
+
+    // setup memory
+    mem_size = 149;
+    prog_mem = new unsigned char[mem_size];
+    std::memcpy(prog_mem, instr, sizeof(instr));
+
+    // fetch
+    cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
+    cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
+    cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
+
+    // execute and assert
+    EXPECT_FALSE(execute());
+    EXPECT_NE(reg_file[PC], 150);
+}
+
+TEST(EMU4380_UNITTESTS, EXECUTE_MOV_VALID) {
+
+    // test instruction
+    unsigned char instr[8] = {
+        MOV, 1, 2, 3, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
+    reg_file[R1] = 0;
+    reg_file[R2] = 4294967295;
+    reg_file[PC] = 0;
+
+    // setup memory
+    mem_size = 4294967295;
+    prog_mem = new unsigned char[mem_size];
+    std::memcpy(prog_mem, instr, sizeof(instr));
+
+    // fetch
+    cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
+    cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
+    cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
+
+    // decode
+    data_regs[REG_VAL_1] = reg_file[R2];
+
+    // execute and assert
+    EXPECT_TRUE(execute());
+    EXPECT_EQ(reg_file[R1], 4294967295);
+    EXPECT_EQ(data_regs[REG_VAL_1], 4294967295);
+
+}
+
+TEST(EMU4380_UNITTESTS, EXECUTE_MOV_INVALID) {
+
+    // test instruction
+    unsigned char instr[8] = {
+        MOV, 1, 2, 3, 0x96, 0x00, 0x00, 0x00
+    };
+
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
+    reg_file[R1] = 0;
+    reg_file[R2] = 140;
+    reg_file[PC] = 0;
+
+    // setup memory
+    mem_size = 149;
+    prog_mem = new unsigned char[mem_size];
+    std::memcpy(prog_mem, instr, sizeof(instr));
+
+    // fetch
+    cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
+    cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
+    cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
+
+    // execute and assert
+    execute();
+    EXPECT_NE(reg_file[R1], 150);
+    EXPECT_NE(data_regs[REG_VAL_1], 150);
+}
+
+TEST(EMU4380_UNITTESTS, EXECUTE_MOVI_VALID) {
+
+    // test instruction
+    unsigned char instr[8] = {
+        MOVI, 1, 2, 3, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
+    reg_file[R1] = 0;
+    reg_file[R2] = 4294967295;
+    reg_file[PC] = 0;
+
+    // setup memory
+    mem_size = 4294967295;
+    prog_mem = new unsigned char[mem_size];
+    std::memcpy(prog_mem, instr, sizeof(instr));
+
+    // fetch
+    cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
+    cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
+    cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
+
+    // execute and assert
+    EXPECT_TRUE(execute());
+    EXPECT_EQ(reg_file[R1], 4294967295);
+    EXPECT_NE(data_regs[REG_VAL_1], 4294967295);
+
+}
+
+TEST(EMU4380_UNITTESTS, EXECUTE_MOVI_INVALID) {
+
+    // test instruction
+    unsigned char instr[8] = {
+        MOVI, 1, 2, 3, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    // setup registers
+    std::memset(data_regs, 0, sizeof(data_regs));
+    std::memset(cntrl_regs, 0, sizeof(cntrl_regs));
+    std::memset(reg_file, 0, sizeof(reg_file));
+    reg_file[R1] = 0;
+    reg_file[R2] = 140;
+    reg_file[PC] = 0;
+
+    // setup memory
+    mem_size = 149;
+    prog_mem = new unsigned char[mem_size];
+    std::memcpy(prog_mem, instr, sizeof(instr));
+
+    // fetch
+    cntrl_regs[OPERATION] = prog_mem[reg_file[PC]];
+    cntrl_regs[OPERAND_1] = prog_mem[reg_file[PC] + 1];
+    cntrl_regs[OPERAND_2] = prog_mem[reg_file[PC] + 2];
+    cntrl_regs[OPERAND_3] = prog_mem[reg_file[PC] + 3];
+    cntrl_regs[IMMEDIATE] = static_cast<unsigned int>(prog_mem[reg_file[PC] + 4]) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 5]) << 8) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 6]) << 16) |
+                    (static_cast<unsigned int>(prog_mem[reg_file[PC] + 7]) << 24);
+    delete[] prog_mem;
+
+    // decode and assert
+    execute();
+    EXPECT_NE(reg_file[R1], 255);
+    EXPECT_NE(data_regs[REG_VAL_1], 255);
 }
 
 int runMain(int argc, char **argv) {
